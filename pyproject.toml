@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "embedbuilder"
+version = "0.1.0"
+description = "A flexible Discord.py embed builder with pagination and customization"
+authors = [{ name="Ypuf", email="ypuf@jpuf.xyz" }]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["discord.py>=2.5", "pytz"]
+
+[project.urls]
+Homepage = "https://github.com/Ypuf/embedbuilder"
+Issues = "https://github.com/Ypuf/embedbuilder/issues"
