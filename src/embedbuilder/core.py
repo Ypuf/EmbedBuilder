@@ -73,6 +73,46 @@ class EmbedBuilder:
         self._thread_auto_archive_duration = 1440  # 24hrs
         self._thread_reason = None
 
+        self._aliases = {
+            'thumb': 'set_thumbnail',
+            'img': 'set_image',
+            'image': 'set_image',
+            'color': 'set_color',
+            'colour': 'set_color',
+            'set_colour': 'set_color',
+            'title': 'set_title',
+            'desc': 'set_description',
+            'description': 'set_description',
+            'desc': 'set_description',
+            'delete_after': 'set_delete_after',
+            'delete': 'set_delete_after',
+            'author': 'set_author',
+            'footer': 'set_footer',
+            'field': 'add_field',
+            'fields': 'add_fields',
+            'content': 'set_content',
+            'url': 'set_url',
+            'timestamp': 'set_timestamp',
+            'ephemeral': 'set_ephemeral',
+            'reply': 'set_reply',
+            'file': 'add_file',
+            'f': 'add_file',
+            'file_path': 'set_file_path',
+            'f_path': 'set_file_path',
+            'page': 'add_page',
+            'edit': 'edit_message',
+            'create_forum': 'create_forum_thread',
+            'forum_thread': 'create_forum_thread',
+            'forum': 'create_forum_thread',
+            'thread': 'create_thread',
+        }
+
+    def __getattr__(self, name):
+        if name in self._aliases:
+            return getattr(self, self._aliases[name])
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
     def set_title(self, title: str) -> "EmbedBuilder":
         """Set the embed title."""
         self._title = str(title)
@@ -87,10 +127,6 @@ class EmbedBuilder:
         """Set the embed color."""
         self._color = color
         return self
-
-    def set_colour(self, colour: Union[discord.Colour, int]) -> "EmbedBuilder":
-        """Set the embed colour (alias for set_color)."""
-        return self.set_color(colour)
 
     def set_url(self, url: str) -> "EmbedBuilder":
         """Set the embed URL."""
