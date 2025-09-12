@@ -151,6 +151,7 @@ await EmbedBuilder(ctx) \
 
 ### Forums and threads
 (IF YOURE CREATING A FORUM) Forums are a little bit "complicated" with a specific call being required.
+
 If the forum already exists, it acts as a normal channel.
 ```py
 await EmbedBuilder(forum_channel) \
@@ -163,6 +164,7 @@ await EmbedBuilder(forum_channel) \
     .send()
 ```
 (IF YOU'RE CREATING A THREAD) You have a lot of input options for this.
+
 If the thread already exists, it acts as a normal channel.
 ```py
 await EmbedBuilder(ctx) \
@@ -172,6 +174,7 @@ await EmbedBuilder(ctx) \
     .send()
 ```
 I'm pretty sure auto_archive_duration has to be very rigid times but I'm not entirely sure of that.
+
 Don't pass in `None` to auto_archive_duration.
 
 ## That's basically it
