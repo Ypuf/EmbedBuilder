@@ -83,7 +83,6 @@ class EmbedBuilder:
             'title': 'set_title',
             'desc': 'set_description',
             'description': 'set_description',
-            'desc': 'set_description',
             'delete_after': 'set_delete_after',
             'delete': 'set_delete_after',
             'author': 'set_author',
