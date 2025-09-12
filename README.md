@@ -12,6 +12,7 @@ From there you can just..
 ```py
 import discord
 from discord.ext import commands
+from embedbuilder import EmbedBuilder
 
 @bot.command(name="example")
 async def example(ctx):
@@ -141,20 +142,11 @@ await builder.send()  # creates navigation buttons
 
 ### Edit existing messages instead of sending new ones
 ```py
-old_message = await ctx.send("Loading...")
+old_message = await EmbedBuilder().... # any old embedbuilder function or any old embed at all
 await EmbedBuilder(ctx) \
     .edit_message(old_message) \
     .set_title("Done!") \
     .send()
-```
-
-### Multiple embeds with gradient colors (because why not)
-honestly this doesnt have any proper functionality right now but it will i prmise
-```py
-await EmbedBuilder(ctx) \
-    .set_description("Long content that creates multiple embeds") \
-    .enable_gradient_colors() \
-    .send()  # each embed gets a different color
 ```
 
 ## That's basically it
