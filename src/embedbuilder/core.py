@@ -27,7 +27,7 @@ class EmbedBuilder:
         self._timestamp = None
 
         # Author properties
-        self._author_name = "Cheap Credits"
+        self._author_name = ""
         self._author_icon_url = ""
         self._author_url = ""
 

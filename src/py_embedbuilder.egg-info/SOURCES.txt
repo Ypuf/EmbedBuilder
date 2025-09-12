@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/embedbuilder/__init__.py
+src/embedbuilder/core.py
+src/embedbuilder/customization.py
+src/embedbuilder/pagination.py
+src/embedbuilder/utils.py
+src/py_embedbuilder.egg-info/PKG-INFO
+src/py_embedbuilder.egg-info/SOURCES.txt
+src/py_embedbuilder.egg-info/dependency_links.txt
+src/py_embedbuilder.egg-info/requires.txt
+src/py_embedbuilder.egg-info/top_level.txt

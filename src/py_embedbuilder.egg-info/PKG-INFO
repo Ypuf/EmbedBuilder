@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: py-embedbuilder
+Version: 0.1.2
+Summary: A flexible Discord.py embed builder with pagination and customization
+Author-email: Ypuf <ypuf@jpuf.xyz>
+License-Expression: MIT
+Project-URL: Homepage, https://github.com/Ypuf/embedbuilder
+Project-URL: Issues, https://github.com/Ypuf/embedbuilder/issues
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: discord.py>=2.5
+Requires-Dist: pytz
+
+does a lot of shit and simplifies discord's annoying and lengthy embed creation process.
