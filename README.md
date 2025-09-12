@@ -53,12 +53,12 @@ These both do the exact same thing it's just a matter of preference.
 ### Author details
 Author details (author name, author icon url, author url) are incredibly simple.
 ```py
-.set_author("Cheap Credits", ?icon_url="https://example.com/img.png", ?url="https://cheap.ypuf.xyz")
+await EmbedBuilder(ctx).set_author("Cheap Credits", ?icon_url="https://example.com/img.png", ?url="https://cheap.ypuf.xyz")
 ```
 
 ### Footer details
 ```py
-.set_footer("Visit my site!", ?icon_url="https://example.com/img.png")
+await EmbedBuilder(ctx).set_footer("Visit my site!", ?icon_url="https://example.com/img.png")
 ```
 
 ### Fields
@@ -66,6 +66,18 @@ These are just normal field inputs so it's title, description and then inline: t
 ```py
 .add_field("Look at this number", "17", inline=True)
 .add_field("Another field", "Some value", inline=False)
+.add_field("Woah another field", "with a value", inline=False)
+```
+
+Optionally, you can also add multiple fields at once with a tuple
+
+```py
+fields = [
+    ("Look at this number", "17", True),
+    ("Another field", "Some value", False)
+    ("Woah another field", "with a value") # Inline is false by default
+]
+await EmbedBuilder(ctx).add_fields(fields)
 ```
 
 ### Images and thumbnails
@@ -82,7 +94,7 @@ These are just normal field inputs so it's title, description and then inline: t
 
 ### Message content (outside the embed)
 ```py
-.set_content("This text appears above the embed")
+await EmbedBuilder(ctx).set_content("This text appears above the embed")
 ```
 
 ### Timestamps
@@ -137,7 +149,7 @@ await builder.send()  # creates navigation buttons
 
 ### Auto-delete messages
 ```py
-.set_delete_after(30)  # deletes after 30 seconds
+await EmbedBuilder(ctx).set_delete_after(30)  # deletes after 30 seconds
 ```
 
 ### Edit existing messages instead of sending new ones

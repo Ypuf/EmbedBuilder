@@ -70,7 +70,7 @@ class EmbedBuilder:
         # Thread creaetion properties
         self._create_thread = False
         self._thread_name = ""
-        self._thread_auto_archive_duration = 1440 # 24hrs
+        self._thread_auto_archive_duration = 1440  # 24hrs
         self._thread_reason = None
 
     def set_title(self, title: str) -> "EmbedBuilder":
@@ -133,6 +133,20 @@ class EmbedBuilder:
     def add_field(self, name: str, value: str, inline: bool = False) -> "EmbedBuilder":
         """Add a field to the embed."""
         self._fields.append((str(name), str(value), inline))
+        return self
+
+    def add_fields(self, fields: List[tuple]) -> "EmbedBuilder":
+        for field in fields:
+            if len(field) == 2:
+                name, value = field
+                inline = False
+            elif len(field) == 3:
+                name, value, inline = field
+            else:
+                raise ValueError(
+                    f"Field tuple must have 2 or 3 elements, got {len(field)}")
+
+            self._fields.append((str(name), str(value), inline))
         return self
 
     def set_content(self, content: str) -> "EmbedBuilder":
@@ -442,7 +456,6 @@ class EmbedBuilder:
                 logger.error(f"Failed to create thread: {e}")
 
         return [message]
-
 
     async def _send_multiple_embeds(self, chunks: List[str]) -> List[discord.Message]:
         """Send multiple embeds for long descriptions."""
