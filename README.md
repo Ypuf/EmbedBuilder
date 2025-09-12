@@ -149,6 +149,31 @@ await EmbedBuilder(ctx) \
     .send()
 ```
 
+### Forums and threads
+(IF YOURE CREATING A FORUM) Forums are a little bit "complicated" with a specific call being required.
+If the forum already exists, it acts as a normal channel.
+```py
+await EmbedBuilder(forum_channel) \
+    .create_forum_thread(
+        name="Bug report 2077!",
+        ?content="Pls help johnny silverhand is in my head." # Optional, defaults to embed content.
+    ) \
+    .set_title("Please patch!!") \
+    .set_description("So this would actually appear as embedded text") \
+    .send()
+```
+(IF YOU'RE CREATING A THREAD) You have a lot of input options for this.
+If the thread already exists, it acts as a normal channel.
+```py
+await EmbedBuilder(ctx) \
+    .set_title("Any embed title") \
+    .set_description("Any embed description") \
+    .create_thread("New thread!", ?auto_archive_duration=10080, ?reason="I felt like creating one lol xd") \ # Duration is in minutes.
+    .send()
+```
+I'm pretty sure auto_archive_duration has to be very rigid times but I'm not entirely sure of that.
+Don't pass in `None` to auto_archive_duration.
+
 ## That's basically it
 The library handles all the annoying Discord limits and validation for you. Just chain the methods you want and call `.send()` at the end.
 

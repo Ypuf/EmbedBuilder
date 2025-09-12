@@ -15,7 +15,7 @@ logger = logging.getLogger("EmbedBuilder")
 
 
 class EmbedBuilder:
-    def __init__(self, source: Union[commands.Context, discord.Interaction, discord.TextChannel, discord.DMChannel, discord.User, discord.Member, discord.Message]):
+    def __init__(self, source: Union[commands.Context, discord.Interaction, discord.TextChannel, discord.DMChannel, discord.ForumChannel, discord.Thread, discord.User, discord.Member, discord.Message]):
         self.source = source
         self.customizer = EmbedCustomizer(source)
 
@@ -66,6 +66,12 @@ class EmbedBuilder:
         self._pagination_timeout = 180.0
         self._edit_message = None
         self._override_user = None
+
+        # Thread creaetion properties
+        self._create_thread = False
+        self._thread_name = ""
+        self._thread_auto_archive_duration = 1440 # 24hrs
+        self._thread_reason = None
 
     def set_title(self, title: str) -> "EmbedBuilder":
         """Set the embed title."""
@@ -210,6 +216,20 @@ class EmbedBuilder:
         self._override_user = user
         return self
 
+    def create_forum_thread(self, name: str, content: str = None) -> "EmbedBuilder":
+        """Set parameters for creating a new forum thread."""
+        self._forum_thread_name = name
+        self._forum_thread_content = content or self._content
+        return self
+
+    def create_thread(self, name: str, auto_archive_duration: int = 1440, reason: str = None) -> "EmbedBuilder":
+        """Create a new thread from the sent message in a text channel."""
+        self._create_thread = True
+        self._thread_name = str(name)
+        self._thread_auto_archive_duration = auto_archive_duration
+        self._thread_reason = reason
+        return self
+
     async def build_embed(self, chunk: str = None, index: int = 0, total_chunks: int = 1) -> discord.Embed:
         """Build a single Discord embed."""
         customizer = EmbedCustomizer(self._override_user or self.source)
@@ -300,14 +320,31 @@ class EmbedBuilder:
 
         is_interaction = isinstance(self.source, discord.Interaction)
         is_ctx = isinstance(self.source, commands.Context)
+        is_forum = isinstance(self.source, discord.ForumChannel)
 
         if isinstance(self.source, (discord.User, discord.Member)):
             self.source = await self.source.create_dm()
         elif isinstance(self.source, discord.Message):
             self.source = self.source.channel
+        if isinstance(self.source, discord.ForumChannel):
+            if not hasattr(self, '_forum_thread_name'):
+                raise ValueError(
+                    "Cannot send messages directly to a ForumChannel. "
+                    "Use create_forum_thread(name) to create a new thread, "
+                    "or pass a Thread from the forum instead."
+                )
+            thread_content = getattr(
+                self, '_forum_thread_content', self._content or "New thread")
+
+            thread = await self.source.create_thread(
+                name=self._forum_thread_name,
+                content=thread_content
+            )
+            self.source = thread
+            self._content = ""
 
         channel = (
-            self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel))
+            self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
             else getattr(self.source, 'channel', None)
         )
 
@@ -388,12 +425,24 @@ class EmbedBuilder:
                 message = await self.source.reply(**message_options)
             else:
                 channel = (
-                    self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel))
+                    self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
                     else self.source.channel
                 )
                 message = await channel.send(**message_options)
 
+        if self._create_thread and isinstance(message.channel, discord.TextChannel):
+            try:
+                thread = await message.create_thread(
+                    name=self._thread_name,
+                    auto_archive_duration=self._thread_auto_archive_duration,
+                    reason=self._thread_reason
+                )
+                self._created_thread = thread
+            except discord.HTTPException as e:
+                logger.error(f"Failed to create thread: {e}")
+
         return [message]
+
 
     async def _send_multiple_embeds(self, chunks: List[str]) -> List[discord.Message]:
         """Send multiple embeds for long descriptions."""
@@ -453,12 +502,23 @@ class EmbedBuilder:
                         message = await self.source.reply(**message_options)
                     else:
                         channel = (
-                            self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel))
+                            self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
                             else self.source.channel
                         )
                         message = await channel.send(**message_options)
 
                 messages.append(message)
+
+                if i == 0 and self._create_thread and isinstance(message.channel, discord.TextChannel):
+                    try:
+                        thread = await message.create_thread(
+                            name=self._thread_name,
+                            auto_archive_duration=self._thread_auto_archive_duration,
+                            reason=self._thread_reason
+                        )
+                        self._created_thread = thread
+                    except discord.HTTPException as e:
+                        logger.error(f"Failed to create thread: {e}")
 
                 if i < len(chunks) - 1:
                     await asyncio.sleep(0.5)
@@ -600,7 +660,7 @@ class EmbedBuilder:
                 message = await self.source.reply(**message_options)
             else:
                 channel = (
-                    self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel))
+                    self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
                     else self.source.channel
                 )
                 message = await channel.send(**message_options)

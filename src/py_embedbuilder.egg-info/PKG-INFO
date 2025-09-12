@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: py-embedbuilder
-Version: 0.1.4
+Version: 0.1.5
 Summary: Cool idiomatic discord.py embed builder with a lot of features
 Author-email: Ypuf <ypuf@jpuf.xyz>
 License-Expression: MIT
@@ -155,21 +155,37 @@ await builder.send()  # creates navigation buttons
 
 ### Edit existing messages instead of sending new ones
 ```py
-old_message = await ctx.send("Loading...")
+old_message = await EmbedBuilder().... # any old embedbuilder function or any old embed at all
 await EmbedBuilder(ctx) \
     .edit_message(old_message) \
     .set_title("Done!") \
     .send()
 ```
 
-### Multiple embeds with gradient colors (because why not)
-honestly this doesnt have any proper functionality right now but it will i prmise
+### Forums and threads
+(IF YOURE CREATING A FORUM) Forums are a little bit "complicated" with a specific call being required.
+If the forum already exists, it acts as a normal channel.
+```py
+await EmbedBuilder(forum_channel) \
+    .create_forum_thread(
+        name="Bug report 2077!",
+        ?content="Pls help johnny silverhand is in my head." # Optional, defaults to embed content.
+    ) \
+    .set_title("Please patch!!") \
+    .set_description("So this would actually appear as embedded text") \
+    .send()
+```
+(IF YOU'RE CREATING A THREAD) You have a lot of input options for this.
+If the thread already exists, it acts as a normal channel.
 ```py
 await EmbedBuilder(ctx) \
-    .set_description("Long content that creates multiple embeds") \
-    .enable_gradient_colors() \
-    .send()  # each embed gets a different color
+    .set_title("Any embed title") \
+    .set_description("Any embed description") \
+    .create_thread("New thread!", ?auto_archive_duration=10080, ?reason="I felt like creating one lol xd") \ # Duration is in minutes.
+    .send()
 ```
+I'm pretty sure auto_archive_duration has to be very rigid times but I'm not entirely sure of that.
+Don't pass in `None` to auto_archive_duration.
 
 ## That's basically it
 The library handles all the annoying Discord limits and validation for you. Just chain the methods you want and call `.send()` at the end.
