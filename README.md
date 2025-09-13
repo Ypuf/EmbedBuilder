@@ -212,14 +212,17 @@ Install the source code from https://github.com/Ypuf/EmbedBuilder/releases
 (If you're willing to self build I'm going to assume you know what most of this means)
 
 ```bash
-pip install build```
+pip install build
+```
 
 cd into whatever directory you've installed the source code
 
 ```bash
-python -m build```
+python -m build
+```
 
 then, to install it
 
 ```bash
-pip install .```
+pip install .
+```
