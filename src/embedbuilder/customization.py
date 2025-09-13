@@ -45,8 +45,8 @@ class EmbedCustomizer:
             return color if color is not None else colour
         return self._get_custom_value('get_embed_colour', self.default_colour)
 
-    def get_author_name(self, author_name: str = "Cheap Credits") -> str:
-        if author_name == "Cheap Credits":
+    def get_author_name(self, author_name: str = "") -> str:
+        if author_name == "":
             return self._get_custom_value('get_embed_author_name', author_name)
         return author_name
 
@@ -68,7 +68,7 @@ class EmbedCustomizer:
     def get_all_custom_values(self,
                               color: Union[discord.Colour, int] = None,
                               colour: Union[discord.Colour, int] = None,
-                              author_name: str = "Cheap Credits",
+                              author_name: str = "",
                               author_icon_url: str = "",
                               footer_text: str = "",
                               footer_icon_url: str = "") -> Tuple:

@@ -9,6 +9,7 @@ from typing import Union, List
 
 from .customization import EmbedCustomizer
 from .pagination import PaginationView
+from .messagesender import MessageSender
 from .utils import chunk_text, truncate_text
 
 logger = logging.getLogger("EmbedBuilder")
@@ -17,6 +18,7 @@ logger = logging.getLogger("EmbedBuilder")
 class EmbedBuilder:
     def __init__(self, source: Union[commands.Context, discord.Interaction, discord.TextChannel, discord.DMChannel, discord.ForumChannel, discord.Thread, discord.User, discord.Member, discord.Message]):
         self.source = source
+        self.message_sender = MessageSender(source)
         self.customizer = EmbedCustomizer(source)
 
         # Core embed properties
@@ -67,11 +69,15 @@ class EmbedBuilder:
         self._edit_message = None
         self._override_user = None
 
-        # Thread creaetion properties
+        # Thread creation properties
         self._create_thread = False
         self._thread_name = ""
         self._thread_auto_archive_duration = 1440  # 24hrs
         self._thread_reason = None
+
+        # Forum thread properties
+        self._forum_thread_name = ""
+        self._forum_thread_content = ""
 
         self._aliases = {
             'thumb': 'set_thumbnail',
@@ -171,6 +177,7 @@ class EmbedBuilder:
         return self
 
     def add_fields(self, fields: List[tuple]) -> "EmbedBuilder":
+        """Add multiple fields wiht a tuple"""
         for field in fields:
             if len(field) == 2:
                 name, value = field
@@ -279,8 +286,98 @@ class EmbedBuilder:
         self._thread_reason = reason
         return self
 
+    async def _setup_forum_thread(self):
+        if not hasattr(self, '_forum_thread_name') or not self._forum_thread_name:
+            raise ValueError(
+                "Cannot send messages directly to a ForumChannel. "
+                "Use create_forum_thread(name) to create a new thread, "
+                "or pass a Thread from the forum instead."
+            )
+
+        thread_content = getattr(
+            self, '_forum_thread_content', self._content or "New thread"
+        )
+
+        thread = await self.source.create_thread(
+            name=self._forum_thread_name,
+            content=thread_content
+        )
+        self.source = thread
+        self.message_sender = MessageSender(thread)
+        self._content = ""
+
+    async def _build_page_embed(self, page: dict, index: int) -> discord.Embed:
+        customizer = EmbedCustomizer(self._override_user or self.source)
+
+        page_title = page.get(
+            'title', f"{self._title} (Page {index+1}/{len(self._pages)})")
+        page_title = truncate_text(page_title, 256)
+
+        page_description = page.get('description', '')
+        if not page_description:
+            raise ValueError(f"Description for page {index+1} cannot be empty")
+
+        page_color = page.get('colour', page.get('color', self._color))
+
+        (custom_colour, custom_author_name, custom_author_icon,
+         custom_footer_text, custom_footer_icon) = customizer.get_all_custom_values(
+            color=page_color,
+            author_name=page.get('author_name', self._author_name),
+            author_icon_url=page.get('author_icon_url', self._author_icon_url),
+            footer_text=page.get('footer_text', self._footer_text),
+            footer_icon_url=page.get('footer_icon_url', self._footer_icon_url)
+        )
+
+        embed = discord.Embed(
+            title=page_title,
+            description=page_description,
+            colour=custom_colour,
+            url=page.get('url', self._url if index == 0 else ""),
+            timestamp=self._timestamp or datetime.datetime.now()
+        )
+
+        if index == 0 or page.get('author_name'):
+            author_name = page.get('author_name', custom_author_name)
+            if author_name:
+                embed.set_author(
+                    name=truncate_text(author_name, 256),
+                    icon_url=page.get('author_icon_url',
+                                      custom_author_icon) or None,
+                    url=page.get('author_url', self._author_url) or None
+                )
+
+        if page.get('thumbnail_url'):
+            embed.set_thumbnail(url=page['thumbnail_url'])
+        elif index == 0 and self._thumbnail_url:
+            embed.set_thumbnail(url=self._thumbnail_url)
+
+        if page.get('file_path'):
+            embed.set_image(url=f"attachment://image_{index}.png")
+        elif page.get('image_url'):
+            embed.set_image(url=page['image_url'])
+        elif index == 0 and self._image_url:
+            embed.set_image(url=self._image_url)
+
+        page_fields = page.get('fields', self._fields if index == 0 else None)
+        if page_fields:
+            for name, value, inline in page_fields:
+                embed.add_field(
+                    name=truncate_text(name, 256),
+                    value=truncate_text(value, 1024),
+                    inline=inline
+                )
+
+        footer_text = page.get('footer_text', custom_footer_text)
+        if footer_text:
+            embed.set_footer(
+                text=truncate_text(footer_text, 2048),
+                icon_url=page.get('footer_icon_url',
+                                  custom_footer_icon) or None
+            )
+
+        return embed
+
     async def build_embed(self, chunk: str = None, index: int = 0, total_chunks: int = 1) -> discord.Embed:
-        """Build a single Discord embed."""
         customizer = EmbedCustomizer(self._override_user or self.source)
         (custom_colour, custom_author_name, custom_author_icon,
          custom_footer_text, custom_footer_icon) = customizer.get_all_custom_values(
@@ -352,7 +449,6 @@ class EmbedBuilder:
         return embed
 
     async def send(self) -> List[discord.Message]:
-        """Send the embed(s) and return the message(s)."""
         if not self._author_name or not isinstance(self._author_name, str):
             raise ValueError("Author name must be a non-empty string")
 
@@ -367,41 +463,11 @@ class EmbedBuilder:
         if self._file_path and not os.path.exists(self._file_path):
             raise ValueError(f"File not found at path: {self._file_path}")
 
-        is_interaction = isinstance(self.source, discord.Interaction)
-        is_ctx = isinstance(self.source, commands.Context)
-        is_forum = isinstance(self.source, discord.ForumChannel)
-
-        if isinstance(self.source, (discord.User, discord.Member)):
-            self.source = await self.source.create_dm()
-        elif isinstance(self.source, discord.Message):
-            self.source = self.source.channel
-        if isinstance(self.source, discord.ForumChannel):
-            if not hasattr(self, '_forum_thread_name'):
-                raise ValueError(
-                    "Cannot send messages directly to a ForumChannel. "
-                    "Use create_forum_thread(name) to create a new thread, "
-                    "or pass a Thread from the forum instead."
-                )
-            thread_content = getattr(
-                self, '_forum_thread_content', self._content or "New thread")
-
-            thread = await self.source.create_thread(
-                name=self._forum_thread_name,
-                content=thread_content
-            )
-            self.source = thread
-            self._content = ""
-
-        channel = (
-            self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
-            else getattr(self.source, 'channel', None)
-        )
-
-        if not channel and not is_interaction and not self._edit_message:
-            raise ValueError("Could not determine target channel")
-
         if self._paginated and self._pages:
             return await self._send_paginated()
+
+        if isinstance(self.source, discord.ForumChannel):
+            await self._setup_forum_thread()
 
         if len(self._description) <= 4096:
             chunks = [self._description]
@@ -417,83 +483,34 @@ class EmbedBuilder:
     async def _send_single_embed(self, description: str) -> List[discord.Message]:
         embed = await self.build_embed(description, 0, 1)
 
-        discord_files = []
-        if self._file_path:
-            discord_files.append(discord.File(
-                self._file_path, filename=os.path.basename(self._file_path)))
-        discord_files.extend(self._files)
-
-        message_options = {
-            "embed": embed,
-            "allowed_mentions": self._allowed_mentions,
-            "tts": self._tts,
-            "suppress_embeds": self._suppress_embeds,
-            "silent": self._silent,
-        }
-
-        if self._content:
-            message_options["content"] = self._content
-        if discord_files:
-            message_options["files"] = discord_files
-        if self._view:
-            message_options["view"] = self._view
+        discord_files = self._prepare_files()
 
         if self._edit_message:
-            if discord_files:
-                try:
-                    await self._edit_message.delete()
-                    self._edit_message = None
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
-                    self._edit_message = None
-            else:
-                try:
-                    await self._edit_message.edit(**message_options)
-                    return [self._edit_message]
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
-                    self._edit_message = None
-
-        if isinstance(self.source, discord.Interaction):
-            message_options.update({
-                "ephemeral": self._ephemeral,
-                "delete_after": self._delete_after,
-            })
-
-            if not self.source.response.is_done():
-                await self.source.response.send_message(**message_options)
-                message = await self.source.original_response()
-            else:
-                message = await self.source.followup.send(**message_options)
+            message = await self.message_sender.edit_message(
+                self._edit_message, embed, self._content, discord_files, self._view,
+                allowed_mentions=self._allowed_mentions, tts=self._tts,
+                suppress_embeds=self._suppress_embeds, silent=self._silent,
+                ephemeral=self._ephemeral, delete_after=self._delete_after
+            )
         else:
-            message_options.update({
-                "delete_after": self._delete_after,
-                "stickers": self._stickers,
-                "mention_author": self._mention_author,
-            })
+            message = await self.message_sender.send_message(
+                embed, self._content, discord_files, self._view, self._reply,
+                allowed_mentions=self._allowed_mentions, tts=self._tts,
+                suppress_embeds=self._suppress_embeds, silent=self._silent,
+                ephemeral=self._ephemeral, delete_after=self._delete_after,
+                stickers=self._stickers, mention_author=self._mention_author
+            )
 
-            if isinstance(self.source, commands.Context) and self._reply:
-                message = await self.source.reply(**message_options)
-            else:
-                channel = (
-                    self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
-                    else self.source.channel
-                )
-                message = await channel.send(**message_options)
-
-        if self._create_thread and isinstance(message.channel, discord.TextChannel):
-            try:
-                thread = await message.create_thread(
-                    name=self._thread_name,
-                    auto_archive_duration=self._thread_auto_archive_duration,
-                    reason=self._thread_reason
-                )
+        if self._create_thread:
+            thread = await self.message_sender.create_thread_if_needed(
+                message, self._thread_name, self._thread_auto_archive_duration, self._thread_reason
+            )
+            if thread:
                 self._created_thread = thread
-            except discord.HTTPException as e:
-                logger.error(f"Failed to create thread: {e}")
 
         return [message]
 
     async def _send_multiple_embeds(self, chunks: List[str]) -> List[discord.Message]:
-        """Send multiple embeds for long descriptions."""
         messages = []
 
         if self._edit_message:
@@ -507,66 +524,29 @@ class EmbedBuilder:
             try:
                 embed = await self.build_embed(chunk, i, len(chunks))
 
-                message_options = {
-                    "embed": embed,
-                    "allowed_mentions": self._allowed_mentions,
-                    "tts": self._tts,
-                    "suppress_embeds": self._suppress_embeds,
-                    "silent": self._silent,
-                }
+                content = self._content if i == 0 else None
+                files = self._prepare_files() if i == 0 else None
+                view = self._view if i == 0 else None
+                reply = self._reply if i == 0 else False
 
-                if i == 0:
-                    if self._content:
-                        message_options["content"] = self._content
-
-                    discord_files = []
-                    if self._file_path:
-                        discord_files.append(discord.File(
-                            self._file_path, filename=os.path.basename(self._file_path)))
-                    discord_files.extend(self._files)
-
-                    if discord_files:
-                        message_options["files"] = discord_files
-                    if self._view:
-                        message_options["view"] = self._view
-
-                if isinstance(self.source, discord.Interaction):
-                    message_options["ephemeral"] = self._ephemeral
-
-                    if i == 0 and not self.source.response.is_done():
-                        await self.source.response.send_message(**message_options)
-                        message = await self.source.original_response()
-                    else:
-                        message = await self.source.followup.send(**message_options)
-                else:
-                    if i == 0:
-                        message_options.update({
-                            "delete_after": self._delete_after,
-                            "stickers": self._stickers,
-                            "mention_author": self._mention_author,
-                        })
-
-                    if isinstance(self.source, commands.Context) and self._reply and i == 0:
-                        message = await self.source.reply(**message_options)
-                    else:
-                        channel = (
-                            self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
-                            else self.source.channel
-                        )
-                        message = await channel.send(**message_options)
+                message = await self.message_sender.send_message(
+                    embed, content, files, view, reply,
+                    allowed_mentions=self._allowed_mentions, tts=self._tts,
+                    suppress_embeds=self._suppress_embeds, silent=self._silent,
+                    ephemeral=self._ephemeral,
+                    delete_after=self._delete_after if i == 0 else None,
+                    stickers=self._stickers if i == 0 else [],
+                    mention_author=self._mention_author if i == 0 else False
+                )
 
                 messages.append(message)
 
-                if i == 0 and self._create_thread and isinstance(message.channel, discord.TextChannel):
-                    try:
-                        thread = await message.create_thread(
-                            name=self._thread_name,
-                            auto_archive_duration=self._thread_auto_archive_duration,
-                            reason=self._thread_reason
-                        )
+                if i == 0 and self._create_thread:
+                    thread = await self.message_sender.create_thread_if_needed(
+                        message, self._thread_name, self._thread_auto_archive_duration, self._thread_reason
+                    )
+                    if thread:
                         self._created_thread = thread
-                    except discord.HTTPException as e:
-                        logger.error(f"Failed to create thread: {e}")
 
                 if i < len(chunks) - 1:
                     await asyncio.sleep(0.5)
@@ -579,7 +559,6 @@ class EmbedBuilder:
         return messages
 
     async def _send_paginated(self) -> List[discord.Message]:
-        """Send paginated embeds."""
         if not self._pages:
             raise ValueError(
                 "Pages list must be provided when paginated is True")
@@ -588,129 +567,44 @@ class EmbedBuilder:
         discord_files = []
 
         for i, page in enumerate(self._pages):
-            page_title = page.get(
-                'title', f"{self._title} (Page {i+1}/{len(self._pages)})")
-            page_title = truncate_text(page_title, 256)
-
-            page_description = page.get('description', '')
-            if not page_description:
-                raise ValueError(f"Description for page {i+1} cannot be empty")
-
-            page_color = page.get('colour', page.get('color', self._color))
-
-            embed = discord.Embed(
-                title=page_title,
-                description=page_description,
-                colour=page_color,
-                url=page.get('url', self._url if i == 0 else ""),
-                timestamp=self._timestamp or datetime.datetime.now()
-            )
-
-            if i == 0 or page.get('author_name'):
-                author_name = page.get('author_name', self._author_name)
-                if author_name:
-                    embed.set_author(
-                        name=truncate_text(author_name, 256),
-                        icon_url=page.get('author_icon_url',
-                                          self._author_icon_url) or None,
-                        url=page.get('author_url', self._author_url) or None
-                    )
-
-            if page.get('thumbnail_url'):
-                embed.set_thumbnail(url=page['thumbnail_url'])
-            elif i == 0 and self._thumbnail_url:
-                embed.set_thumbnail(url=self._thumbnail_url)
-
-            if page.get('file_path'):
-                embed.set_image(url=f"attachment://image_{i}.png")
-                if os.path.exists(page['file_path']):
-                    discord_files.append(discord.File(
-                        page['file_path'], filename=f'image_{i}.png'))
-            elif page.get('image_url'):
-                embed.set_image(url=page['image_url'])
-            elif i == 0 and self._image_url:
-                embed.set_image(url=self._image_url)
-
-            page_fields = page.get('fields', self._fields if i == 0 else None)
-            if page_fields:
-                for name, value, inline in page_fields:
-                    embed.add_field(
-                        name=truncate_text(name, 256),
-                        value=truncate_text(value, 1024),
-                        inline=inline
-                    )
-
-            footer_text = page.get('footer_text', self._footer_text)
-            if footer_text:
-                embed.set_footer(
-                    text=truncate_text(footer_text, 2048),
-                    icon_url=page.get('footer_icon_url',
-                                      self._footer_icon_url) or None
-                )
-
+            embed = await self._build_page_embed(page, i)
             embeds.append(embed)
+
+            if page.get('file_path') and os.path.exists(page['file_path']):
+                discord_files.append(discord.File(
+                    page['file_path'], filename=f'image_{i}.png'))
 
         if self._file_path and os.path.exists(self._file_path):
             discord_files.append(discord.File(
                 self._file_path, filename='image_0.png'))
-
         discord_files.extend(self._files)
 
         pagination_view = PaginationView(
             embeds, timeout=self._pagination_timeout)
 
-        message_options = {
-            "embed": embeds[0],
-            "view": pagination_view,
-            "allowed_mentions": self._allowed_mentions,
-        }
-
-        if self._content:
-            message_options["content"] = self._content
-        if discord_files:
-            message_options["files"] = discord_files
-
         if self._edit_message:
-            if discord_files:
-                try:
-                    await self._edit_message.delete()
-                    self._edit_message = None
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
-                    self._edit_message = None
-            else:
-                try:
-                    await self._edit_message.edit(**message_options)
-                    return [self._edit_message]
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
-                    self._edit_message = None
-
-        if isinstance(self.source, discord.Interaction):
-            message_options.update({
-                "ephemeral": self._ephemeral,
-                "tts": self._tts,
-                "suppress_embeds": self._suppress_embeds,
-                "silent": self._silent,
-            })
-
-            if not self.source.response.is_done():
-                await self.source.response.send_message(**message_options)
-                message = await self.source.original_response()
-            else:
-                message = await self.source.followup.send(**message_options)
+            message = await self.message_sender.edit_message(
+                self._edit_message, embeds[0], self._content,
+                discord_files or None, pagination_view,  # Fixed this line
+                allowed_mentions=self._allowed_mentions, tts=self._tts,
+                suppress_embeds=self._suppress_embeds, silent=self._silent
+            )
         else:
-            message_options.update({
-                "tts": self._tts,
-                "suppress_embeds": self._suppress_embeds,
-                "silent": self._silent,
-            })
-
-            if isinstance(self.source, commands.Context) and self._reply:
-                message = await self.source.reply(**message_options)
-            else:
-                channel = (
-                    self.source if isinstance(self.source, (discord.TextChannel, discord.DMChannel, discord.Thread))
-                    else self.source.channel
-                )
-                message = await channel.send(**message_options)
+            message = await self.message_sender.send_message(
+                # Fixed this line
+                embeds[0], self._content, discord_files or None, pagination_view, self._reply,
+                allowed_mentions=self._allowed_mentions, tts=self._tts,
+                suppress_embeds=self._suppress_embeds, silent=self._silent,
+                ephemeral=self._ephemeral
+            )
 
         return [message]
+
+    def _prepare_files(self) -> List[discord.File]:
+        discord_files = []
+        if self._file_path:
+            discord_files.append(discord.File(
+                self._file_path, filename=os.path.basename(self._file_path)
+            ))
+        discord_files.extend(self._files)
+        return discord_files

@@ -2,6 +2,11 @@
 
 Does a lot of shit and simplifies discord's annoying and lengthy embed creation process.
 
+This does NOT *require* 3.11+ necessarily, it just hasn't been TESTED for anything older.
+
+If you CAN confirm that it works for 3.9/3.10 create an issue on the GitHub and I'll update accordingly.
+
+
 ## Installation
 ```bash
 pip install py-embedbuilder
