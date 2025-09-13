@@ -204,3 +204,22 @@ Currently 64 different tests are run every update to ensure quality however this
 The library handles all the annoying Discord limits and validation for you. Just chain the methods you want and call `.send()` at the end.
 
 If something breaks, it'll probably tell you what went wrong instead of just dying silently like Discord's API likes to do.
+
+
+## Instructions to self-build
+Install the source code from https://github.com/Ypuf/EmbedBuilder/releases
+
+(If you're willing to self build I'm going to assume you know what most of this means)
+
+```bash
+pip install build```
+
+cd into whatever directory you've installed the source code
+
+```bash
+python -m build```
+
+then, to install it
+
+```bash
+pip install .```
