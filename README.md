@@ -197,6 +197,9 @@ I'm pretty sure auto_archive_duration has to be very rigid times but I'm not ent
 
 Don't pass in `None` to auto_archive_duration.
 
+## Testing
+Currently 64 different tests are run every update to ensure quality however this does not GUARANTEE quality as I am still human.
+
 ## That's basically it
 The library handles all the annoying Discord limits and validation for you. Just chain the methods you want and call `.send()` at the end.
 
