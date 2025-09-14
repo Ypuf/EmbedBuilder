@@ -4,7 +4,7 @@ from typing import List
 def chunk_text(description: str, max_chunk_size: int = 4096, max_chunks: int = 10) -> List[str]:
     text = description.strip()
     if not text:
-        raise ValueError("Description cannot be empty")
+        return [""]
 
     if len(text) <= max_chunk_size:
         return [text]

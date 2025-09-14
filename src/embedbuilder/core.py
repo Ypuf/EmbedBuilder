@@ -314,8 +314,6 @@ class EmbedBuilder:
         page_title = truncate_text(page_title, 256)
 
         page_description = page.get('description', '')
-        if not page_description:
-            raise ValueError(f"Description for page {index+1} cannot be empty")
 
         page_color = page.get('colour', page.get('color', self._color))
 
@@ -449,8 +447,8 @@ class EmbedBuilder:
         return embed
 
     async def send(self) -> List[discord.Message]:
-        if not self._author_name or not isinstance(self._author_name, str):
-            raise ValueError("Author name must be a non-empty string")
+        if self._author_name and not isinstance(self._author_name, str):
+            raise ValueError("Author name must be a string")
 
         if len(self._title) > 256:
             raise ValueError(
@@ -463,7 +461,7 @@ class EmbedBuilder:
         if self._file_path and not os.path.exists(self._file_path):
             raise ValueError(f"File not found at path: {self._file_path}")
 
-        if self._paginated and self._pages:
+        if self._paginated:
             return await self._send_paginated()
 
         if isinstance(self.source, discord.ForumChannel):
