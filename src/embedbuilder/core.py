@@ -110,6 +110,7 @@ class EmbedBuilder:
             'forum_thread': 'create_forum_thread',
             'forum': 'create_forum_thread',
             'thread': 'create_thread',
+            'tts': 'set_tts'
         }
 
     def __getattr__(self, name):
@@ -260,6 +261,36 @@ class EmbedBuilder:
     def set_max_embeds(self, max_embeds: int) -> "EmbedBuilder":
         """Set maximum number of embeds to create."""
         self._max_embeds = max_embeds
+        return self
+
+    def set_tts(self, tts: bool = True) -> "EmbedBuilder":
+        """Set whether the message should use text-to-speech."""
+        self._tts = tts
+        return self
+
+    def set_suppress_embeds(self, suppress: bool = True) -> "EmbedBuilder":
+        """Set whether to suppress embeds in the message."""
+        self._suppress_embeds = suppress
+        return self
+
+    def set_silent(self, silent: bool = True) -> "EmbedBuilder":
+        """Set whether the message should be sent silently (no notification)."""
+        self._silent = silent
+        return self
+
+    def set_mention_author(self, mention: bool = True) -> "EmbedBuilder":
+        """Set whether to mention the author when replying."""
+        self._mention_author = mention
+        return self
+
+    def add_sticker(self, sticker: discord.Sticker) -> "EmbedBuilder":
+        """Add a sticker to the message."""
+        self._stickers.append(sticker)
+        return self
+
+    def set_stickers(self, stickers: List[discord.Sticker]) -> "EmbedBuilder":
+        """Set the stickers for the message."""
+        self._stickers = stickers
         return self
 
     def edit_message(self, message: discord.Message) -> "EmbedBuilder":
@@ -583,17 +614,18 @@ class EmbedBuilder:
         if self._edit_message:
             message = await self.message_sender.edit_message(
                 self._edit_message, embeds[0], self._content,
-                discord_files or None, pagination_view,  # Fixed this line
+                discord_files or None, pagination_view,
                 allowed_mentions=self._allowed_mentions, tts=self._tts,
                 suppress_embeds=self._suppress_embeds, silent=self._silent
             )
         else:
             message = await self.message_sender.send_message(
-                # Fixed this line
                 embeds[0], self._content, discord_files or None, pagination_view, self._reply,
                 allowed_mentions=self._allowed_mentions, tts=self._tts,
                 suppress_embeds=self._suppress_embeds, silent=self._silent,
-                ephemeral=self._ephemeral
+                ephemeral=self._ephemeral,
+                stickers=self._stickers,
+                mention_author=self._mention_author
             )
 
         return [message]

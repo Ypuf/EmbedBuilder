@@ -1,8 +1,10 @@
+LICENSE
 README.md
 pyproject.toml
 src/embedbuilder/__init__.py
 src/embedbuilder/core.py
 src/embedbuilder/customization.py
+src/embedbuilder/messagesender.py
 src/embedbuilder/pagination.py
 src/embedbuilder/utils.py
 src/py_embedbuilder.egg-info/PKG-INFO

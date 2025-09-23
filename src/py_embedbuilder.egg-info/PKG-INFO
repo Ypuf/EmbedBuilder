@@ -1,19 +1,30 @@
 Metadata-Version: 2.4
 Name: py-embedbuilder
-Version: 0.1.7a0
-Summary: Cool idiomatic discord.py embed builder with a lot of features
+Version: 0.1.11
+Summary: Cool embedbuilder with support for every source, pagination and lots of QoL
 Author-email: Ypuf <ypuf@jpuf.xyz>
-License-Expression: MIT
+License-Expression: LGPL-2.1
 Project-URL: Homepage, https://github.com/Ypuf/embedbuilder
 Project-URL: Issues, https://github.com/Ypuf/embedbuilder/issues
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: discord.py>=2.5
 Requires-Dist: pytz
+Dynamic: license-file
 
 # Discord EmbedBuilder
 
+[![PyPI version](https://img.shields.io/pypi/v/py-embedbuilder.svg)](https://pypi.org/project/py-embedbuilder/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/py-embedbuilder.svg)](https://pypi.org/project/py-embedbuilder/)
+[![License](https://img.shields.io/github/license/Ypuf/embedbuilder.svg)](https://github.com/Ypuf/embedbuilder/blob/main/LICENSE)
+
 Does a lot of shit and simplifies discord's annoying and lengthy embed creation process.
+
+This does NOT *require* 3.11+ necessarily, it just hasn't been TESTED for anything older.
+
+If you CAN confirm that it works for 3.9/3.10 create an issue on the GitHub and I'll update accordingly.
+
 
 ## Installation
 ```bash
@@ -205,7 +216,32 @@ I'm pretty sure auto_archive_duration has to be very rigid times but I'm not ent
 
 Don't pass in `None` to auto_archive_duration.
 
+## Testing
+Currently 64 different tests are run every update to ensure quality however this does not GUARANTEE quality as I am still human.
+
 ## That's basically it
 The library handles all the annoying Discord limits and validation for you. Just chain the methods you want and call `.send()` at the end.
 
 If something breaks, it'll probably tell you what went wrong instead of just dying silently like Discord's API likes to do.
+
+
+## Instructions to self-build
+Install the source code from https://github.com/Ypuf/EmbedBuilder/releases
+
+(If you're willing to self build I'm going to assume you know what most of this means)
+
+```pwsh
+pip install build
+```
+
+cd into whatever directory you've installed the source code
+
+```ps1
+python -m build
+```
+
+then, to install it
+
+```powershell
+pip install .
+```

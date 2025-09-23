@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "py-embedbuilder"
-version = "0.1.10"
-description = "Cool idiomatic discord.py embed builder with a lot of features"
+version = "0.1.11"
+description = "Cool embedbuilder with support for every source, pagination and lots of QoL"
 authors = [{ name="Ypuf", email="ypuf@jpuf.xyz" }]
 readme = "README.md"
 license = "LGPL-2.1"

@@ -1,5 +1,9 @@
 # Discord EmbedBuilder
 
+[![PyPI version](https://img.shields.io/pypi/v/py-embedbuilder.svg)](https://pypi.org/project/py-embedbuilder/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/py-embedbuilder.svg)](https://pypi.org/project/py-embedbuilder/)
+[![License](https://img.shields.io/github/license/Ypuf/embedbuilder.svg)](https://github.com/Ypuf/embedbuilder/blob/main/LICENSE)
+
 Does a lot of shit and simplifies discord's annoying and lengthy embed creation process.
 
 This does NOT *require* 3.11+ necessarily, it just hasn't been TESTED for anything older.
