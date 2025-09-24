@@ -110,7 +110,15 @@ class EmbedBuilder:
             'forum_thread': 'create_forum_thread',
             'forum': 'create_forum_thread',
             'thread': 'create_thread',
-            'tts': 'set_tts'
+            'tts': 'set_tts',
+            'sticker': 'add_sticker',
+            'stickers': 'set_stickers',
+            'silent': 'set_silent',
+            'max_embeds': 'set_max_embeds',
+            'suppress': 'set_suppress_embeds',
+            'suppress_embeds': 'set_suppress_embeds',
+            'mention_author': 'set_mention_author',
+            'view': 'set_view',
         }
 
     def __getattr__(self, name):
