@@ -1,11 +1,14 @@
 Metadata-Version: 2.4
 Name: py-embedbuilder
-Version: 0.1.11
+Version: 0.1.12
 Summary: Cool embedbuilder with support for every source, pagination and lots of QoL
 Author-email: Ypuf <ypuf@jpuf.xyz>
 License-Expression: LGPL-2.1
 Project-URL: Homepage, https://github.com/Ypuf/embedbuilder
 Project-URL: Issues, https://github.com/Ypuf/embedbuilder/issues
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 License-File: LICENSE
